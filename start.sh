@@ -40,6 +40,13 @@ if [ -z "$DB_DATABASE" ] && [ -n "$MYSQLDATABASE" ]; then export DB_DATABASE="$M
 if [ -z "$DB_USERNAME" ] && [ -n "$MYSQLUSER" ]; then export DB_USERNAME="$MYSQLUSER"; fi
 if [ -z "$DB_PASSWORD" ] && [ -n "$MYSQLPASSWORD" ]; then export DB_PASSWORD="$MYSQLPASSWORD"; fi
 
+# créer le fichier SQLite si on utilise SQLite
+if [ "$DB_CONNECTION" = 'sqlite' ]; then
+  export DB_DATABASE="${DB_DATABASE:-/tmp/database.sqlite}"
+  mkdir -p "$(dirname "$DB_DATABASE")"
+  touch "$DB_DATABASE"
+fi
+
 # Clé d'application si absente
 if [ -z "$APP_KEY" ]; then
   export APP_KEY="base64:$(php -r 'echo base64_encode(random_bytes(32));')"
