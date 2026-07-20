@@ -17,7 +17,7 @@ class AlertController extends Controller
         $alerts = Alert::with('vehicle')
             ->when($request->query('status'), fn ($q, $status) => $q->where('status', $status))
             ->when($request->query('priority'), fn ($q, $priority) => $q->where('priority', $priority))
-            ->orderByRaw("FIELD(priority, 'critical', 'high', 'medium', 'low')")
+            ->orderByPriority()
             ->orderBy('due_date')
             ->paginate(15);
 

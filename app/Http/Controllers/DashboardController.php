@@ -27,7 +27,7 @@ class DashboardController extends Controller
 
         $alerts = Alert::with('vehicle')
             ->where('status', 'pending')
-            ->orderByRaw("FIELD(priority, 'critical', 'high', 'medium', 'low')")
+            ->orderByPriority()
             ->orderBy('due_date')
             ->limit(6)
             ->get();
