@@ -9,19 +9,37 @@ return new class extends Migration
 {
     public function up(): void
     {
-        DB::statement("ALTER TABLE documents MODIFY COLUMN type ENUM('registration', 'insurance', 'invoice', 'inspection', 'contract', 'other') NOT NULL");
+        $driver = Schema::getConnection()->getDriverName();
+
+        if ($driver === 'mysql') {
+            DB::statement("ALTER TABLE documents MODIFY COLUMN type ENUM('registration', 'insurance', 'invoice', 'inspection', 'contract', 'other') NOT NULL");
+        } elseif ($driver === 'pgsql') {
+            DB::statement('ALTER TABLE documents DROP CONSTRAINT IF EXISTS documents_type_check');
+            DB::statement("ALTER TABLE documents ADD CONSTRAINT documents_type_check CHECK (type IN ('registration', 'insurance', 'invoice', 'inspection', 'contract', 'other'))");
+        }
 
         Schema::table('odometer_readings', function (Blueprint $table) {
-            $table->boolean('is_locked')->default(true)->after('content_hash');
+            if (! Schema::hasColumn('odometer_readings', 'is_locked')) {
+                $table->boolean('is_locked')->default(true);
+            }
         });
     }
 
     public function down(): void
     {
         Schema::table('odometer_readings', function (Blueprint $table) {
-            $table->dropColumn('is_locked');
+            if (Schema::hasColumn('odometer_readings', 'is_locked')) {
+                $table->dropColumn('is_locked');
+            }
         });
 
-        DB::statement("ALTER TABLE documents MODIFY COLUMN type ENUM('registration', 'insurance', 'invoice', 'inspection', 'other') NOT NULL");
+        $driver = Schema::getConnection()->getDriverName();
+
+        if ($driver === 'mysql') {
+            DB::statement("ALTER TABLE documents MODIFY COLUMN type ENUM('registration', 'insurance', 'invoice', 'inspection', 'other') NOT NULL");
+        } elseif ($driver === 'pgsql') {
+            DB::statement('ALTER TABLE documents DROP CONSTRAINT IF EXISTS documents_type_check');
+            DB::statement("ALTER TABLE documents ADD CONSTRAINT documents_type_check CHECK (type IN ('registration', 'insurance', 'invoice', 'inspection', 'other'))");
+        }
     }
 };

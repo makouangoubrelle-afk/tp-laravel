@@ -13,6 +13,20 @@ export BLOCKCHAIN_MODE="${BLOCKCHAIN_MODE:-simulation}"
 export NODE_BINARY="${NODE_BINARY:-node}"
 export ALLOW_DEMO_WALLET="${ALLOW_DEMO_WALLET:-false}"
 
+# Render : URL publique automatique
+if [ -z "$APP_URL" ] && [ -n "$RENDER_EXTERNAL_URL" ]; then
+  export APP_URL="$RENDER_EXTERNAL_URL"
+  echo "APP_URL Render : $APP_URL"
+fi
+
+# Render / PostgreSQL : DATABASE_URL
+if [ -n "$DATABASE_URL" ]; then
+  case "$DATABASE_URL" in
+    postgres://*|postgresql://*) export DB_CONNECTION=pgsql ;;
+    mysql://*) export DB_CONNECTION=mysql ;;
+  esac
+fi
+
 # Railway : URL publique automatique
 if [ -z "$APP_URL" ] && [ -n "$RAILWAY_PUBLIC_DOMAIN" ]; then
   export APP_URL="https://${RAILWAY_PUBLIC_DOMAIN}"
@@ -57,8 +71,8 @@ while [ "$attempt" -le "$max" ]; do
 done
 
 if [ "$attempt" -gt "$max" ]; then
-  echo "ERREUR: connexion MySQL impossible."
-  echo "Vérifiez que MySQL est dans le même projet et connecté à tp-laravel."
+  echo "ERREUR: connexion base de données impossible."
+  echo "Vérifiez DATABASE_URL (Render) ou MySQL connecté (Railway)."
   exit 1
 fi
 
