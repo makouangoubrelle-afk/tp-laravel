@@ -47,10 +47,21 @@ if [ "$DB_CONNECTION" = 'sqlite' ]; then
   touch "$DB_DATABASE"
 fi
 
-# Clé d'application si absente
-if [ -z "$APP_KEY" ]; then
+# Dossiers Laravel requis (sessions fichier, cache, vues, logs)
+mkdir -p storage/framework/sessions storage/framework/cache/data storage/framework/views storage/logs bootstrap/cache
+chmod -R 775 storage bootstrap/cache
+
+# Clé Laravel : Render generateValue n'utilise pas le format base64: requis
+if ! php -r '
+$key = getenv("APP_KEY") ?: "";
+if ($key === "" || !str_starts_with($key, "base64:")) {
+    exit(1);
+}
+$decoded = base64_decode(substr($key, 7), true);
+exit($decoded === false || strlen($decoded) !== 32 ? 1 : 0);
+'; then
   export APP_KEY="base64:$(php -r 'echo base64_encode(random_bytes(32));')"
-  echo "APP_KEY générée automatiquement."
+  echo "APP_KEY générée au format Laravel."
 fi
 
 # Cookie sécurisé si HTTPS
