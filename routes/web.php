@@ -17,6 +17,8 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\VehicleController;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/health', fn () => response('ok', 200));
+
 Route::get('/', fn () => redirect()->route('login'));
 
 Route::middleware('guest')->group(function () {
