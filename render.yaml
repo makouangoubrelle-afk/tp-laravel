@@ -5,7 +5,7 @@ services:
     dockerfilePath: ./Dockerfile
     dockerContext: .
     plan: free
-    healthCheckPath: /api/health
+    healthCheckPath: /health
     envVars:
       - key: APP_ENV
         value: production
@@ -16,7 +16,7 @@ services:
       - key: DB_DATABASE
         value: /tmp/database.sqlite
       - key: SESSION_DRIVER
-        value: database
+        value: file
       - key: SESSION_SECURE_COOKIE
         value: "true"
       - key: BLOCKCHAIN_MODE
