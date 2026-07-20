@@ -3,10 +3,48 @@
 set -e
 
 echo "=== AutoChain Emmaus — démarrage ==="
+
+# Valeurs par défaut production
+export APP_ENV="${APP_ENV:-production}"
+export APP_DEBUG="${APP_DEBUG:-false}"
+export DB_CONNECTION="${DB_CONNECTION:-mysql}"
+export SESSION_DRIVER="${SESSION_DRIVER:-database}"
+export BLOCKCHAIN_MODE="${BLOCKCHAIN_MODE:-simulation}"
+export NODE_BINARY="${NODE_BINARY:-node}"
+export ALLOW_DEMO_WALLET="${ALLOW_DEMO_WALLET:-false}"
+
+# Railway : URL publique automatique
+if [ -z "$APP_URL" ] && [ -n "$RAILWAY_PUBLIC_DOMAIN" ]; then
+  export APP_URL="https://${RAILWAY_PUBLIC_DOMAIN}"
+  echo "APP_URL détecté : $APP_URL"
+fi
+
+# Railway : variables MySQL natives (si DB_* non définies)
+if [ -z "$DB_HOST" ] && [ -n "$MYSQLHOST" ]; then export DB_HOST="$MYSQLHOST"; fi
+if [ -z "$DB_PORT" ] && [ -n "$MYSQLPORT" ]; then export DB_PORT="$MYSQLPORT"; fi
+if [ -z "$DB_DATABASE" ] && [ -n "$MYSQLDATABASE" ]; then export DB_DATABASE="$MYSQLDATABASE"; fi
+if [ -z "$DB_USERNAME" ] && [ -n "$MYSQLUSER" ]; then export DB_USERNAME="$MYSQLUSER"; fi
+if [ -z "$DB_PASSWORD" ] && [ -n "$MYSQLPASSWORD" ]; then export DB_PASSWORD="$MYSQLPASSWORD"; fi
+
+# Clé d'application si absente
+if [ -z "$APP_KEY" ]; then
+  export APP_KEY="base64:$(php -r 'echo base64_encode(random_bytes(32));')"
+  echo "APP_KEY générée automatiquement."
+fi
+
+# Cookie sécurisé si HTTPS
+if [ -z "$SESSION_SECURE_COOKIE" ]; then
+  case "$APP_URL" in
+    https://*) export SESSION_SECURE_COOKIE=true ;;
+    *) export SESSION_SECURE_COOKIE=false ;;
+  esac
+fi
+
 echo "PORT=${PORT:-8080}"
+echo "DB_HOST=${DB_HOST:-non défini}"
 
 attempt=1
-max=12
+max=15
 while [ "$attempt" -le "$max" ]; do
   if php artisan migrate --force; then
     echo "Migrations terminées."
@@ -19,12 +57,14 @@ while [ "$attempt" -le "$max" ]; do
 done
 
 if [ "$attempt" -gt "$max" ]; then
-  echo "ERREUR: impossible de migrer la base. Vérifiez DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME, DB_PASSWORD."
+  echo "ERREUR: connexion MySQL impossible."
+  echo "Vérifiez que MySQL est dans le même projet et connecté à tp-laravel."
   exit 1
 fi
 
 php artisan db:seed --force --no-interaction || true
-php artisan config:cache || true
+php artisan config:clear
+php artisan config:cache
 
 echo "Serveur Laravel sur 0.0.0.0:${PORT:-8080}"
 exec php artisan serve --host=0.0.0.0 --port="${PORT:-8080}"
